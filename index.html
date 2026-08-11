@@ -2,73 +2,67 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpenWall — Global Live Board</title>
     <style>
-        /* Minimal style to make it functional */
-        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
-        .form-group { margin-bottom: 15px; }
-        input, textarea { width: 100%; padding: 8px; margin-top: 5px; }
-        button { padding: 10px 15px; cursor: pointer; }
-        .message-card { border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; border-radius: 5px; }
-        .msg-meta { font-size: 0.8rem; color: #666; }
+        :root { --primary: #6366f1; --bg-body: #f8fafc; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: sans-serif; background-color: var(--bg-body); padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .form-card, .message-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; }
+        input, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--border); border-radius: 8px; }
+        button { width: 100%; padding: 12px; background-color: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; }
+        .message-card { animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .msg-meta { font-size: 0.85rem; color: #64748b; margin-bottom: 8px; }
     </style>
 </head>
 <body>
-    <h1>OpenWall</h1>
-    <div id="connection-status">Connecting...</div>
-    <form id="message-form" onsubmit="postMessage(event)">
-        <input type="text" id="recipient-input" placeholder="To" required>
-        <input type="text" id="sender-input" placeholder="From" value="Anonymous">
-        <textarea id="message-input" placeholder="Message" required></textarea>
-        <button type="submit">Post Message</button>
-    </form>
-    <div id="feed-container"></div>
+    <div class="container">
+        <h1>OpenWall</h1>
+        <div class="form-card">
+            <form id="message-form" onsubmit="postMessage(event)">
+                <input type="text" id="recipient-input" placeholder="To" required>
+                <input type="text" id="sender-input" placeholder="From" value="Anonymous">
+                <textarea id="message-input" placeholder="Message" required></textarea>
+                <button type="submit">Post Message</button>
+            </form>
+        </div>
+        <div id="feed-container"></div>
+    </div>
     <script>
-        // High-stability free global JSON storage API
         const API_URL = "https://jsonbin.io";
         const API_KEY = "$2a$10$72T7mJjTzI78OonY7/02iO3gVbI09V7N.L2jR4M.2V7bN/mImsS2q";
-        let activeMessages = [];
-        
-        async function fetchCloudMessages() {
+        let messages = [];
+
+        async function fetchMessages() {
             try {
-                const response = await fetch(API_URL, { headers: { 'X-Master-Key': API_KEY, 'X-Bin-Meta': 'false' } });
-                if (response.ok) {
-                    activeMessages = await response.json();
-                    renderFeed();
-                }
-            } catch (error) { console.error("Error:", error); }
+                const res = await fetch(API_URL, { headers: { 'X-Master-Key': API_KEY, 'X-Bin-Meta': 'false' } });
+                if (res.ok) { messages = await res.json(); renderFeed(); }
+            } catch (e) { console.error(e); }
         }
 
-        async function postMessage(event) {
-            event.preventDefault();
-            const newMessage = {
-                to: document.getElementById('recipient-input').value,
-                from: document.getElementById('sender-input').value,
-                body: document.getElementById('message-input').value,
-                timestamp: Date.now()
-            };
-            activeMessages.unshift(newMessage);
+        async function postMessage(e) {
+            e.preventDefault();
+            const msg = { to: document.getElementById('recipient-input').value, from: document.getElementById('sender-input').value, body: document.getElementById('message-input').value, time: new Date().toLocaleTimeString() };
+            messages.unshift(msg);
             renderFeed();
-            
-            await fetch(API_URL, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
-                body: JSON.stringify(activeMessages.slice(0, 50))
-            });
             document.getElementById('message-input').value = '';
+            try {
+                await fetch(API_URL, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY }, body: JSON.stringify(messages.slice(0, 20)) });
+            } catch (e) { console.error(e); }
         }
 
         function renderFeed() {
-            document.getElementById('feed-container').innerHTML = activeMessages.map(msg => `
+            document.getElementById('feed-container').innerHTML = messages.map(m => `
                 <div class="message-card">
-                    <div class="msg-meta">To: ${msg.to} | From: ${msg.from}</div>
-                    <div>${msg.body}</div>
+                    <div class="msg-meta">To: ${m.to} | From: ${m.from} | ${m.time}</div>
+                    <div>${m.body}</div>
                 </div>
             `).join('');
         }
-        
-        setInterval(fetchCloudMessages, 5000);
-        fetchCloudMessages();
+        setInterval(fetchMessages, 5000);
+        fetchMessages();
     </script>
 </body>
 </html>
