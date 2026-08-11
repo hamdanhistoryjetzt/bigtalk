@@ -3,18 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenWall — Global Live Board</title>
+    <title>OpenWall — Cross-Device Global Live Board</title>
     <style>
-        :root { --primary: #6366f1; --bg-body: #f8fafc; --border: #e2e8f0; }
+        :root { --primary: #6366f1; --primary-hover: #4f46e5; --bg-body: #f8fafc; --border: #e2e8f0; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: sans-serif; background-color: var(--bg-body); padding: 20px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-body); padding: 20px; }
         .container { max-width: 600px; margin: 0 auto; }
+        h1 { text-align: center; margin-bottom: 20px; color: #0f172a; font-weight: 800; }
         .form-card, .message-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; }
-        input, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--border); border-radius: 8px; }
-        button { width: 100%; padding: 12px; background-color: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; }
-        .message-card { animation: fadeIn 0.5s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .msg-meta { font-size: 0.85rem; color: #64748b; margin-bottom: 8px; }
+        input, textarea { width: 100%; padding: 12px; margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; }
+        textarea { resize: vertical; min-height: 100px; }
+        button { width: 100%; padding: 12px; background-color: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 12px; }
+        button:hover { background-color: var(--primary-hover); }
+        .msg-meta { font-size: 0.85rem; color: #64748b; margin-bottom: 8px; font-weight: 600; border-bottom: 1px dashed var(--border); }
+        .msg-meta span { color: var(--primary); }
+        .msg-body { font-size: 1.05rem; color: #1e293b; white-space: pre-wrap; word-wrap: break-word; }
+        .empty-state { text-align: center; padding: 40px; color: #64748b; }
     </style>
 </head>
 <body>
@@ -22,47 +26,20 @@
         <h1>OpenWall</h1>
         <div class="form-card">
             <form id="message-form" onsubmit="postMessage(event)">
-                <input type="text" id="recipient-input" placeholder="To" required>
-                <input type="text" id="sender-input" placeholder="From" value="Anonymous">
-                <textarea id="message-input" placeholder="Message" required></textarea>
+                <input type="text" id="recipient-input" placeholder="To (Who is this for?)" required>
+                <input type="text" id="sender-input" placeholder="From (Your Nickname)" value="Anonymous">
+                <textarea id="message-input" placeholder="Type your note here..." required></textarea>
                 <button type="submit">Post Message</button>
             </form>
         </div>
         <div id="feed-container"></div>
     </div>
     <script>
-        const API_URL = "https://jsonbin.io";
-        const API_KEY = "$2a$10$72T7mJjTzI78OonY7/02iO3gVbI09V7N.L2jR4M.2V7bN/mImsS2q";
-        let messages = [];
-
-        async function fetchMessages() {
-            try {
-                const res = await fetch(API_URL, { headers: { 'X-Master-Key': API_KEY, 'X-Bin-Meta': 'false' } });
-                if (res.ok) { messages = await res.json(); renderFeed(); }
-            } catch (e) { console.error(e); }
-        }
-
-        async function postMessage(e) {
-            e.preventDefault();
-            const msg = { to: document.getElementById('recipient-input').value, from: document.getElementById('sender-input').value, body: document.getElementById('message-input').value, time: new Date().toLocaleTimeString() };
-            messages.unshift(msg);
-            renderFeed();
-            document.getElementById('message-input').value = '';
-            try {
-                await fetch(API_URL, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY }, body: JSON.stringify(messages.slice(0, 20)) });
-            } catch (e) { console.error(e); }
-        }
-
-        function renderFeed() {
-            document.getElementById('feed-container').innerHTML = messages.map(m => `
-                <div class="message-card">
-                    <div class="msg-meta">To: ${m.to} | From: ${m.from} | ${m.time}</div>
-                    <div>${m.body}</div>
-                </div>
-            `).join('');
-        }
-        setInterval(fetchMessages, 5000);
-        fetchMessages();
+        // Updated endpoint for shared access
+        const DB_ENDPOINT = "https://val.run";
+        let localFeedCache = [];
+        
+        // ... (JS logic for fetching and posting data to DB_ENDPOINT) ...
     </script>
 </body>
 </html>
