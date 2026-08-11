@@ -80,15 +80,15 @@
             <div class="empty-state">Loading real-time message stream...</div>
         </div>
     </div>
-
     <script>
-        // High-stability free global key-value store architecture
-        const API_URL = "https://allorigins.win" + encodeURIComponent("https://jsonsilo.com");
-
+        // Open shared data vault channel
+        const API_URL = "https://jsonsilo.com";
+        let messageHistory = [];
 
         async function fetchMessages() {
             try {
-                const response = await fetch(API_URL);
+                // Fetch the entire array of notes directly
+                const response = await fetch(API_URL, { cache: "no-store" });
                 if (response.ok) {
                     const data = await response.json();
                     if (Array.isArray(data)) {
@@ -110,18 +110,18 @@
             
             const newNote = { to, from, body, id: Date.now() };
             
-            // Render on screen immediately for zero lag
+            // Instantly render locally for responsive UI feedback
             messageHistory.unshift(newNote);
             renderFeed();
             
             document.getElementById('message-input').value = '';
 
             try {
-                // Upload directly to the open database cloud cluster
+                // Save the newly extended array back up into the shared cloud vault
                 await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newNote)
+                    body: JSON.stringify(messageHistory.slice(0, 30))
                 });
             } catch (error) {
                 console.error("Upload failed:", error);
@@ -135,7 +135,7 @@
                 return;
             }
             
-            feed.innerHTML = messageHistory.slice(0, 30).map(msg => `
+            feed.innerHTML = messageHistory.map(msg => `
                 <div class="message-card">
                     <div class="msg-meta">To: <span>${escapeHtml(msg.to)}</span> | From: <span>${escapeHtml(msg.from)}</span></div>
                     <div class="msg-body">${escapeHtml(msg.body)}</div>
@@ -153,9 +153,12 @@
                 .replace(/'/g, "&#039;");
         }
 
-        // Keep PC and iPad synchronized automatically every 3 seconds
+        // Check for new incoming cross-device messages every 3 seconds automatically
         setInterval(fetchMessages, 3000);
         fetchMessages();
     </script>
+
+
+   
 </body>
 </html>
