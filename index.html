@@ -73,6 +73,7 @@
             transition: var(--transition);
         }
         .status-connected { background-color: #dcfce7; color: #166534; }
+        .status-connecting { background-color: #fef9c3; color: #854d0e; }
 
         /* Input Form Block */
         .form-card {
@@ -261,10 +262,10 @@
         <!-- Main Brand Header -->
         <header>
             <h1>Open<span>Wall</span></h1>
-            <p>Say anything to anyone. Post a message instantly onto the live board.</p>
+            <p>Say anything to anyone. Post a global anonymous message onto the live public board.</p>
         </header>
 
-        <div id="connection-status" class="status-banner status-connected">Connected to Live Message Router</div>
+        <div id="connection-status" class="status-banner status-connecting">Connecting to Global Networks...</div>
 
         <!-- Message Submission Panel -->
         <div class="form-card">
@@ -283,49 +284,140 @@
                         <textarea id="message-input" required placeholder="Type your letter or note here..."></textarea>
                     </div>
                 </div>
-                <button type="submit" id="submit-btn" class="btn-submit">Publish onto the Wall</button>
+                <button type="submit" id="submit-btn" class="btn-submit" disabled>Awaiting network connection...</button>
             </form>
         </div>
 
         <!-- Real-time Live Board Feed Layout -->
         <div class="board-section">
             <div class="board-heading">
-                <h2>Live Feed</h2>
+                <h2>Live Global Feed</h2>
                 <div class="board-count" id="message-counter">0 notes</div>
             </div>
             
             <div class="message-feed" id="feed-container">
                 <div class="empty-state">
-                    <p>The wall is currently blank. Be the first person to write a note!</p>
+                    <p>Connecting to global server relays to sync live messages...</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- JavaScript Message Routing Engine -->
+    <!-- JavaScript Live Messaging System Engine -->
     <script>
-        const STORAGE_KEY = 'openwall_secure_local_routing_feed';
+        // High-traffic, highly active public data relays
+        const RELAY_POOLS = [
+            "wss://relay.primal.net",
+            "wss://relay.nostr.band",
+            "wss://nos.lol"
+        ];
+        
+        let activeSockets = [];
+        let connectedCount = 0;
         let activeMessages = [];
 
-        document.addEventListener('DOMContentLoaded', initializeWall);
+        document.addEventListener('DOMContentLoaded', connectToMultiNetwork);
 
-        function initializeWall() {
-            activeMessages = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        function connectToMultiNetwork() {
+            connectedCount = 0;
+            activeSockets = [];
             
-            if (activeMessages.length === 0) {
-                activeMessages = [
-                    {
-                        id: 1,
-                        to: "Visitors",
-                        from: "System Router",
-                        body: "Welcome to OpenWall! Type your message above, fill out who it's for, and click publish to see it update live.",
-                        timestamp: Date.now() - 60000
-                    }
-                ];
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(activeMessages));
+            RELAY_POOLS.forEach(url => {
+                try {
+                    let socket = new WebSocket(url);
+                    
+                    socket.onopen = () => {
+                        connectedCount++;
+                        activeSockets.push(socket);
+                        updateStatusBanner();
+                        
+                        // Query the global database for messages tagged with your app name
+        // Premium, ultra-reliable active worldwide server pools
+        const RELAY_POOLS = [
+            "wss://relay.primal.net",
+            "wss://relay.nostr.band",
+            "wss://nos.lol"
+        ];
+        
+        let activeSockets = [];
+        let connectedCount = 0;
+        let activeMessages = [];
+
+        document.addEventListener('DOMContentLoaded', connectToMultiNetwork);
+
+        function connectToMultiNetwork() {
+            connectedCount = 0;
+            activeSockets = [];
+            
+            RELAY_POOLS.forEach(url => {
+                try {
+                    let socket = new WebSocket(url);
+                    
+                    socket.onopen = () => {
+                        connectedCount++;
+                        activeSockets.push(socket);
+                        updateStatusBanner();
+                        
+                        // Query the global database for messages tagged with your app name
+                        const subscriptionRequest = ["REQ", "sub_" + Math.random().toString(16).substring(2, 10), {
+                            kinds:,
+                            limit: 40,
+                            "#t": ["bigtalk_global_historyjetzt"]
+                        }];
+                        socket.send(JSON.stringify(subscriptionRequest));
+                    };
+
+                    socket.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        if (data[0] === "EVENT" && data[2]) {
+                            const nostrEvent = data[2];
+                            try {
+                                const parsedBody = JSON.parse(nostrEvent.content);
+                                if (parsedBody.to && parsedBody.body) {
+                                    if (!activeMessages.some(m => m.id === nostrEvent.id)) {
+                                        activeMessages.push({
+                                            id: nostrEvent.id,
+                                            to: parsedBody.to,
+                                            from: parsedBody.from || 'Anonymous',
+                                            body: parsedBody.body,
+                                            timestamp: nostrEvent.created_at * 1000
+                                        });
+                                        activeMessages.sort((a, b) => b.timestamp - a.timestamp);
+                                        renderFeed();
+                                    }
+                                }
+                            } catch(e) {}
+                        }
+                    };
+
+                    socket.onerror = () => { /* Fail over quietly */ };
+                    socket.onclose = () => {
+                        activeSockets = activeSockets.filter(s => s !== socket);
+                        connectedCount = Math.max(0, connectedCount - 1);
+                        updateStatusBanner();
+                    };
+
+                } catch(e) {
+                    console.error("Connection failed: " + url);
+                }
+            });
+        }
+
+        function updateStatusBanner() {
+            const statusBanner = document.getElementById('connection-status');
+            const submitBtn = document.getElementById('submit-btn');
+
+            if (connectedCount > 0) {
+                statusBanner.className = "status-banner status-connected";
+                statusBanner.innerText = `Connected to Global Cloud Network (${connectedCount} Relays Active)`;
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Publish Global Message";
+            } else {
+                statusBanner.className = "status-banner status-connecting";
+                statusBanner.innerText = "Connecting to Global Networks...";
+                submitBtn.disabled = true;
+                submitBtn.innerText = "Awaiting network connection...";
             }
-            
-            renderFeed();
         }
 
         function postMessage(event) {
@@ -333,60 +425,80 @@
 
             const recipientField = document.getElementById('recipient-input');
             const senderField = document.getElementById('sender-input');
-const messageField = document.getElementById('message-input');
-const newMessage = {
-    id: Date.now(),
-    to: recipientField.value.trim(),
-    from: senderField.value.trim() || 'Anonymous',
-    body: messageField.value.trim(),
-    timestamp: Date.now()
-};
+            const messageField = document.getElementById('message-input');
 
-// Inject the new message straight into local memory instantly
-activeMessages.unshift(newMessage);
-localStorage.setItem(STORAGE_KEY, JSON.stringify(activeMessages));
+            const messagePayload = {
+                to: recipientField.value.trim(),
+                from: senderField.value.trim() || 'Anonymous',
+                body: messageField.value.trim()
+            };
 
-// Clear input fields
-recipientField.value = '';
-senderField.value = 'Anonymous';
-messageField.value = '';
+            const timestamp = Math.floor(Date.now() / 1000);
+            const rawEvent = {
+                kind: 1,
+                created_at: timestamp,
+                tags: [["t", "bigtalk_global_historyjetzt"]],
+                content: JSON.stringify(messagePayload),
+                pubkey: "b00000000000000000000000000000000000000000000000000000000000000c",
+                id: Math.random().toString(16).substring(2, 66)
+            };
 
-// Update UI instantly with smooth cascade animations
-renderFeed();
-}
+            // Broadcast message payload to ALL connected database relays simultaneously
+            let sendSuccess = false;
+            activeSockets.forEach(socket => {
+                if (socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify(["EVENT", rawEvent]));
+                    sendSuccess = true;
+                }
+            });
 
-function renderFeed() {
-    const feedContainer = document.getElementById('feed-container');
-    const counterBadge = document.getElementById('message-counter');
-    
-    // Fixed with proper backticks
-    counterBadge.innerText = `${activeMessages.length} ${activeMessages.length === 1 ? 'note' : 'notes'}`;
-    
-    feedContainer.innerHTML = activeMessages.map(msg => {
-        const formattedDate = new Date(msg.timestamp).toLocaleDateString('en-US', {
-            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-        });
-        
-        // Fixed with proper backticks around the HTML template
-        return `
-            <div class="message-card"> 
-                <div class="msg-meta"> 
-                    <div class="msg-routing"> 
-                        To: <span>${escapeHtml(msg.to)}</span> &bull; From: <span>${escapeHtml(msg.from)}</span> 
-                    </div> 
-                    <div class="msg-date">${formattedDate}</div> 
-                </div> 
-                <div class="msg-body">${escapeHtml(msg.body)}</div> 
-            </div>
-        `;
-    }).join('');
-}
+            if (sendSuccess) {
+                recipientField.value = '';
+                senderField.value = 'Anonymous';
+                messageField.value = '';
+            } else {
+                alert("Connection dropped. Retrying sync...");
+                connectToMultiNetwork();
+            }
+        }
 
-function escapeHtml(text) {
-    return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
+        function renderFeed() {
+            const feedContainer = document.getElementById('feed-container');
+            const counterBadge = document.getElementById('message-counter');
+            
+            counterBadge.innerText = `${activeMessages.length} ${activeMessages.length === 1 ? 'note' : 'notes'}`;
+
+            if (activeMessages.length === 0) {
+                feedContainer.innerHTML = `
+                    <div class="empty-state">
+                        <p>The wall is currently blank. Be the first person to write a global note!</p>
+                    </div>`;
+                return;
+            }
+
+            feedContainer.innerHTML = activeMessages.map(msg => {
+                const formattedDate = new Date(msg.timestamp).toLocaleDateString('en-US', {
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+                return `
+                    <div class="message-card">
+                        <div class="msg-meta">
+                            <div class="msg-routing">
+                                To: <span>${escapeHtml(msg.to)}</span> &bull; From: <span>${escapeHtml(msg.from)}</span>
+                            </div>
+                            <div class="msg-date">${formattedDate}</div>
+                        </div>
+                        <div class="msg-body">${escapeHtml(msg.body)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
