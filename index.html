@@ -66,7 +66,7 @@
 <body>
     <div class="container">
         <h1>OpenWall</h1>
-        <div id="sync-status" class="status">● Local P2P Sync Active</div>
+        <div id="sync-status" class="status">● Connecting to Google Live Sync Router...</div>
         <div class="form-card">
             <form id="message-form" onsubmit="postMessage(event)">
                 <input type="text" id="recipient-input" placeholder="To (Who is this for?)" required>
@@ -76,37 +76,39 @@
             </form>
         </div>
         <div id="feed-container">
-            <div class="empty-state">The wall is completely blank. Write the first note!</div>
+            <div class="empty-state">Loading real-time message stream...</div>
         </div>
     </div>
 
-    <!-- Free public cloud syncing channel framework -->
-    <script src="https://pubnub.com"></script>
+    <!-- Official, Unblocked CDN Libraries -->
+    <script src="https://gstatic.com"></script>
+    <script src="https://gstatic.com"></script>
+
     <script>
-        // High-security serverless data streaming channel
-        const pubnub = new PubNub({
-            publishKey: "pub-c-469b8b7e-cd34-406a-ae57-a9a3028d77c6",
-            subscribeKey: "sub-c-5727ae72-2ca4-46bb-9a1b-f726715f33cf",
-            userId: "user_" + Math.random().toString(16).substring(2, 10)
-        });
+        // Open Cloud Stream Configurations
+        const firebaseConfig = {
+            databaseURL: "https://firebaseio.com"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const messagesRef = database.ref('live_stream');
 
-        let messageHistory = [];
-
-        // Instantly receive messages over your local network pipeline link
-        pubnub.addListener({
-            message: function(event) {
-                const msg = event.message;
-                if (msg.to && msg.body) {
-                    if (!messageHistory.some(m => m.id === msg.id)) {
-                        messageHistory.unshift(msg);
-                        renderFeed();
-                    }
-                }
+        // This listener fires on all devices the millisecond a new note hit the cloud
+        messagesRef.orderByChild('timestamp').limitToLast(30).on('value', (snapshot) => {
+            document.getElementById('sync-status').innerText = "● True Global Cloud Connection Connected";
+            
+            const data = snapshot.val();
+            let notesList = [];
+            
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    notesList.push(data[key]);
+                });
+                // Force newest messages to the top
+                notesList.sort((a, b) => b.timestamp - a.timestamp);
             }
-        });
-
-        pubnub.subscribe({
-            channels: ["bigtalk_global_room_channel_v7"]
+            renderFeed(notesList);
         });
 
         function postMessage(event) {
@@ -116,25 +118,22 @@
             const from = document.getElementById('sender-input').value.trim() || 'Anonymous';
             const body = document.getElementById('message-input').value.trim();
             
-            const newNote = { to, from, body, id: Math.random().toString() };
+            const payload = { to, from, body, timestamp: Date.now() };
             
-            // Broadcast the message instantly across all local network connections
-            pubnub.publish({
-                channel: "bigtalk_global_room_channel_v7",
-                message: newNote
-            });
+            // Blast data packets directly to the central cloud cluster
+            messagesRef.push(payload);
             
             document.getElementById('message-input').value = '';
         }
 
-        function renderFeed() {
+        function renderFeed(list) {
             const feed = document.getElementById('feed-container');
-            if (messageHistory.length === 0) {
+            if (list.length === 0) {
                 feed.innerHTML = '<div class="empty-state">The wall is completely blank. Write the first note!</div>';
                 return;
             }
             
-            feed.innerHTML = messageHistory.map(msg => `
+            feed.innerHTML = list.map(msg => `
                 <div class="message-card">
                     <div class="msg-meta">To: <span>${escapeHtml(msg.to)}</span> | From: <span>${escapeHtml(msg.from)}</span></div>
                     <div class="msg-body">${escapeHtml(msg.body)}</div>
