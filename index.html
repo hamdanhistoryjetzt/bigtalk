@@ -5,469 +5,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpenWall — Global Live Board</title>
     <style>
-        /* Modern Reset & Fluid Design System */
-        :root {
-            --primary: #6366f1;
-            --primary-hover: #4f46e5;
-            --secondary: #0f172a;
-            --bg-body: #f8fafc;
-            --bg-card: #ffffff;
-            --text-main: #1e293b;
-            --text-light: #64748b;
-            --border: #e2e8f0;
-            --transition: all 0.25s ease;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            line-height: 1.5;
-            padding-bottom: 60px;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        /* Header Layout */
-        header {
-            text-align: center;
-            padding: 60px 0 40px;
-        }
-
-        header h1 {
-            font-size: 2.5rem;
-            color: var(--secondary);
-            font-weight: 800;
-            letter-spacing: -0.025em;
-            margin-bottom: 12px;
-        }
-
-        header h1 span {
-            color: var(--primary);
-        }
-
-        header p {
-            color: var(--text-light);
-            font-size: 1.125rem;
-        }
-
-        /* Connection Status Indicator */
-        .status-banner {
-            text-align: center;
-            font-size: 0.85rem;
-            padding: 6px 12px;
-            border-radius: 20px;
-            margin: -20px auto 30px;
-            width: fit-content;
-            font-weight: 600;
-            transition: var(--transition);
-        }
-        .status-connected { background-color: #dcfce7; color: #166534; }
-        .status-connecting { background-color: #fef9c3; color: #854d0e; }
-
-        /* Input Form Block */
-        .form-card {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 32px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            margin-bottom: 48px;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .form-group label {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: var(--secondary);
-        }
-
-        .form-group input,
-        .form-group textarea {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            font-size: 0.95rem;
-            font-family: inherit;
-            color: var(--text-main);
-            background-color: #f8fafc;
-            transition: var(--transition);
-        }
-
-        .form-group textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        .form-group input:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-            background-color: var(--bg-card);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
-        }
-
-        .full-width {
-            grid-column: span 2;
-        }
-
-        .btn-submit {
-            width: 100%;
-            padding: 14px;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: var(--transition);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-submit:hover:not(:disabled) {
-            background-color: var(--primary-hover);
-            transform: translateY(-1px);
-        }
-
-        .btn-submit:disabled {
-            background-color: var(--text-light);
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        /* Feed Display Board */
-        .board-heading {
-            font-size: 1.5rem;
-            color: var(--secondary);
-            font-weight: 700;
-            margin-bottom: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .board-count {
-            font-size: 0.875rem;
-            background-color: var(--border);
-            padding: 4px 12px;
-            border-radius: 20px;
-            color: var(--text-main);
-        }
-
-        .message-feed {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .message-card {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 24px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-            animation: slideUp 0.35s ease;
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .msg-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            padding-bottom: 12px;
-            border-bottom: 1px dashed var(--border);
-            font-size: 0.85rem;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .msg-routing {
-            font-weight: 700;
-            color: var(--secondary);
-        }
-
-        .msg-routing span {
-            color: var(--primary);
-        }
-
-        .msg-date {
-            color: var(--text-light);
-        }
-
-        .msg-body {
-            font-size: 1.05rem;
-            color: var(--text-main);
-            word-wrap: break-word;
-            white-space: pre-wrap;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: var(--text-light);
-            background-color: var(--bg-card);
-            border: 1px dashed var(--border);
-            border-radius: 14px;
-        }
-
-        /* Responsive Breakpoints */
-        @media (max-width: 640px) {
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-            .full-width {
-                grid-column: span 2;
-            }
-            header h1 {
-                font-size: 2rem;
-            }
-        }
+        /* Simplified styles for brevity */
+        :root { --primary: #6366f1; --secondary: #0f172a; --bg-body: #f8fafc; }
+        body { font-family: sans-serif; background-color: var(--bg-body); margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        header { text-align: center; padding: 40px 0; }
+        .form-card, .message-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
+        input, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #e2e8f0; border-radius: 8px; }
+        button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; }
+        .msg-meta { font-size: 0.85rem; color: #64748b; margin-bottom: 10px; }
+        .msg-body { white-space: pre-wrap; }
     </style>
 </head>
 <body>
-
     <div class="container">
-        <!-- Main Brand Header -->
-        <header>
-            <h1>Open<span>Wall</span></h1>
-            <p>Say anything to anyone. Post a message to a live global database across devices!</p>
-        </header>
-
-        <div id="connection-status" class="status-banner status-connecting">Connecting to Global Database Node...</div>
-
-        <!-- Message Submission Panel -->
+        <header><h1>OpenWall</h1></header>
         <div class="form-card">
             <form id="message-form" onsubmit="postMessage(event)">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="recipient-input">To (Who is this for?)</label>
-                        <input type="text" id="recipient-input" required placeholder="e.g., Someone Special, My Future Self, The World">
-                    </div>
-                    <div class="form-group">
-                        <label for="sender-input">From (Your Nickname)</label>
-                        <input type="text" id="sender-input" placeholder="e.g., Anonymous, A Friend, Stranger" value="Anonymous">
-                    </div>
-                    <div class="form-group full-width">
-                        <label for="message-input">Your Message</label>
-                        <textarea id="message-input" required placeholder="Type your letter or note here..."></textarea>
-                    </div>
-                </div>
-                <button type="submit" id="submit-btn" class="btn-submit" disabled>Awaiting secure link up...</button>
+                <input type="text" id="recipient-input" placeholder="To" required>
+                <input type="text" id="sender-input" placeholder="From" value="Anonymous">
+                <textarea id="message-input" placeholder="Message" required></textarea>
+                <button type="submit">Publish</button>
             </form>
         </div>
-
-        <!-- Real-time Live Board Feed Layout -->
-        <div class="board-section">
-            <div class="board-heading">
-                <h2>Live Global Feed</h2>
-                <div class="board-count" id="message-counter">0 notes</div>
-            </div>
-            
-            <div class="message-feed" id="feed-container">
-                <div class="empty-state">
-                    <p>Syncing live notes from the global database network...</p>
-                </div>
-            </div>
-        </div>
+        <div id="feed-container"></div>
     </div>
-  // 3 Different Global Backup Servers Running Simultaneously
-        const RELAY_POOLS = [
-            "wss://relay.primal.net",
-            "wss://relay.nostr.band",
-            "wss://nos.lol"
-        ];
-        
-        let activeSockets = [];
-        let connectedCount = 0;
+    <script>
+        // Combined HTML/JS structure as requested
+        const RELAY = "wss://relay.nostr.band";
+        const socket = new WebSocket(RELAY);
+        const APP_TAG = "bigtalk_global_historyjetzt_v4";
         let activeMessages = [];
 
-        document.addEventListener('DOMContentLoaded', connectToMultiNetwork);
+        socket.onopen = () => {
+            const sub = ["REQ", "sub1", {kinds: [1], "#t": [APP_TAG], limit: 20}];
+            socket.send(JSON.stringify(sub));
+        };
 
-        function connectToMultiNetwork() {
-            connectedCount = 0;
-            activeSockets = [];
-            
-            RELAY_POOLS.forEach(url => {
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data[0] === "EVENT" && data[2]) {
                 try {
-                    let socket = new WebSocket(url);
-                    
-                    socket.onopen = () => {
-                        connectedCount++;
-                        activeSockets.push(socket);
-                        updateStatusBanner();
-                        
-                        // Query the global database for messages tagged with your app name
-                        const subscriptionRequest = ["REQ", "sub_" + Math.random().toString(16).substring(2, 10), {
-                            kinds:,
-                            limit: 40,
-                            "#t": ["bigtalk_global_historyjetzt_v4"]
-                        }];
-                        socket.send(JSON.stringify(subscriptionRequest));
-                    };
-
-                    socket.onmessage = (event) => {
-                        const data = JSON.parse(event.data);
-                        if (data[0] === "EVENT" && data[2]) {
-                            const nostrEvent = data[2];
-                            try {
-                                const parsedBody = JSON.parse(nostrEvent.content);
-                                if (parsedBody.to && parsedBody.body) {
-                                    if (!activeMessages.some(m => m.id === nostrEvent.id)) {
-                                        activeMessages.push({
-                                            id: nostrEvent.id,
-                                            to: parsedBody.to,
-                                            from: parsedBody.from || 'Anonymous',
-                                            body: parsedBody.body,
-                                            timestamp: nostrEvent.created_at * 1000
-                                        });
-                                        activeMessages.sort((a, b) => b.timestamp - a.timestamp);
-                                        renderFeed();
-                                    }
-                                }
-                            } catch(e) {}
-                        }
-                    };
-
-                    socket.onclose = () => {
-                        activeSockets = activeSockets.filter(s => s !== socket);
-                        connectedCount = Math.max(0, connectedCount - 1);
-                        updateStatusBanner();
-                    };
-
-                } catch(e) {
-                    console.error("Connection failed: " + url);
-                }
-            });
-        }
-
-        function updateStatusBanner() {
-            const statusBanner = document.getElementById('connection-status');
-            const submitBtn = document.getElementById('submit-btn');
-
-            if (connectedCount > 0) {
-                statusBanner.className = "status-banner status-connected";
-                statusBanner.innerText = `Connected to Global Cloud Network (${connectedCount} Relays Active)`;
-                submitBtn.disabled = false;
-                submitBtn.innerText = "Publish Global Message";
-            } else {
-                statusBanner.className = "status-banner status-connecting";
-                statusBanner.innerText = "Connecting to Global Networks...";
-                submitBtn.disabled = true;
-                submitBtn.innerText = "Awaiting secure link up...";
+                    const content = JSON.parse(data[2].content);
+                    activeMessages.unshift(content);
+                    renderFeed();
+                } catch(e) {}
             }
-        }
+        };
 
-        function postMessage(event) {
-            event.preventDefault();
-
-            const recipientField = document.getElementById('recipient-input');
-            const senderField = document.getElementById('sender-input');
-            const messageField = document.getElementById('message-input');
-
-            const messagePayload = {
-                to: recipientField.value.trim(),
-                from: senderField.value.trim() || 'Anonymous',
-                body: messageField.value.trim()
+        function postMessage(e) {
+            e.preventDefault();
+            const msg = {
+                to: document.getElementById('recipient-input').value,
+                from: document.getElementById('sender-input').value,
+                body: document.getElementById('message-input').value
             };
-
-            const timestamp = Math.floor(Date.now() / 1000);
-            const rawEvent = {
-                kind: 1,
-                created_at: timestamp,
-                tags: [["t", "bigtalk_global_historyjetzt_v4"]],
-                content: JSON.stringify(messagePayload),
-                pubkey: "b00000000000000000000000000000000000000000000000000000000000000c",
-                id: Math.random().toString(16).substring(2, 66)
+            const event = {
+                kind: 1, created_at: Math.floor(Date.now()/1000),
+                tags: [["t", APP_TAG]], content: JSON.stringify(msg)
             };
-
-            // Broadcast message payload to ALL connected database relays simultaneously
-            let sendSuccess = false;
-            activeSockets.forEach(socket => {
-                if (socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify(["EVENT", rawEvent]));
-                    sendSuccess = true;
-                }
-            });
-
-            if (sendSuccess) {
-                recipientField.value = '';
-                senderField.value = 'Anonymous';
-                messageField.value = '';
-            } else {
-                alert("Connection dropped. Retrying sync...");
-                connectToMultiNetwork();
-            }
+            socket.send(JSON.stringify(["EVENT", event]));
+            e.target.reset();
         }
 
         function renderFeed() {
-            const feedContainer = document.getElementById('feed-container');
-            const counterBadge = document.getElementById('message-counter');
-            
-            counterBadge.innerText = `${activeMessages.length} ${activeMessages.length === 1 ? 'note' : 'notes'}`;
-
-            if (activeMessages.length === 0) {
-                feedContainer.innerHTML = `
-                    <div class="empty-state">
-                        <p>The wall is currently blank. Be the first person to write a global note!</p>
-                    </div>`;
-                return;
-            }
-
-            feedContainer.innerHTML = activeMessages.map(msg => {
-                const formattedDate = new Date(msg.timestamp).toLocaleDateString('en-US', {
-                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                });
-                return `
-                    <div class="message-card">
-                        <div class="msg-meta">
-                            <div class="msg-routing">
-                                To: <span>${escapeHtml(msg.to)}</span> &bull; From: <span>${escapeHtml(msg.from)}</span>
-                            </div>
-                            <div class="msg-date">${formattedDate}</div>
-                        </div>
-                        <div class="msg-body">${escapeHtml(msg.body)}</div>
-                    </div>
-                `;
-            }).join('');
+            document.getElementById('feed-container').innerHTML = activeMessages.map(m => `
+                <div class="message-card">
+                    <div class="msg-meta">To: ${m.to} | From: ${m.from}</div>
+                    <div class="msg-body">${m.body}</div>
+                </div>
+            `).join('');
         }
-
-        function escapeHtml(text) {
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
+    </script>
+</body>
+</html>
