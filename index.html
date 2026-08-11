@@ -265,7 +265,7 @@
             <p>Say anything to anyone. Post a global anonymous message onto the live public board.</p>
         </header>
 
-        <div id="connection-status" class="status-banner status-connecting">Connecting to Global Networks... (0/4 Active)</div>
+        <div id="connection-status" class="status-banner status-connecting">Connecting to Global Networks... (0/3 Active)</div>
 
         <!-- Message Submission Panel -->
         <div class="form-card">
@@ -305,12 +305,11 @@
 
     <!-- Free Global Network Multi-Connector Scripts -->
     <script>
-        // List of multiple reliable, free open-source global servers
+        // Updated active, secure, high-speed global relays
         const RELAY_POOLS = [
+            "wss://://elftown.com",
             "wss://nos.lol",
-            "wss://relay.snort.social",
-            "wss://relay.damus.io",
-            "wss://purplepag.es"
+            "wss://://plebstr.com"
         ];
         
         let activeSockets = [];
@@ -332,4 +331,4 @@
                         activeSockets.push(socket);
                         updateStatusBanner();
                         
-                        // Request messages matching our specific app signature
+                        // Request messages matching our specific application signature tag
