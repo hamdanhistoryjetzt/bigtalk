@@ -303,105 +303,88 @@
         </div>
     </div>
 
-    <!-- JavaScript Live Messaging System Engine -->
-    <script>
-        // High-traffic, highly active public data relay
-        const RELAY_URL = "wss://nos.lol";
-        let socket;
+        // 3 Different Global Backup Servers Running Simultaneously
+        const RELAY_POOLS = [
+            "wss://relay.primal.net",
+            "wss://relay.nostr.band",
+            "wss://nos.lol"
+        ];
+        
+        let activeSockets = [];
+        let connectedCount = 0;
         let activeMessages = [];
 
-        document.addEventListener('DOMContentLoaded', connectToGlobalNetwork);
+        document.addEventListener('DOMContentLoaded', connectToMultiNetwork);
 
-        function connectToGlobalNetwork() {
-            try {
-                socket = new WebSocket(RELAY_URL);
-                
-                socket.onopen = () => {
-                    updateStatusBanner(true);
+        function connectToMultiNetwork() {
+            connectedCount = 0;
+            activeSockets = [];
+            
+            RELAY_POOLS.forEach(url => {
+                try {
+                    let socket = new WebSocket(url);
                     
-                    // Fixed syntax: data kind array parameter is filled cleanly with [1]
-                    const subscriptionRequest = ["REQ", "sub_" + Math.random().toString(16).substring(2, 10), {
-                        kinds: [1],
-                        limit: 30,
-                        "#t": ["bigtalk_global_historyjetzt_v2"]
-                    }];
-                    socket.send(JSON.stringify(subscriptionRequest));
-                };
+                    socket.onopen = () => {
+                        connectedCount++;
+                        activeSockets.push(socket);
+                        updateStatusBanner();
+                        
+                        // Query the global database for messages tagged with your app name
+                        const subscriptionRequest = ["REQ", "sub_" + Math.random().toString(16).substring(2, 10), {
+                            kinds:,
+                            limit: 40,
+                            "#t": ["bigtalk_global_historyjetzt_v4"]
+                        }];
+                        socket.send(JSON.stringify(subscriptionRequest));
+                    };
 
-                socket.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-        // High-traffic, highly active public data relay
-        const RELAY_URL = "wss://nos.lol";
-        let socket;
-        let activeMessages = [];
-
-        document.addEventListener('DOMContentLoaded', connectToGlobalNetwork);
-
-        function connectToGlobalNetwork() {
-            try {
-                socket = new WebSocket(RELAY_URL);
-                
-                socket.onopen = () => {
-                    updateStatusBanner(true);
-                    
-                    // Fixed syntax: data kind array parameter is filled cleanly with 1
-                    const subscriptionRequest = ["REQ", "sub_" + Math.random().toString(16).substring(2, 10), {
-                        kinds:,
-                        limit: 30,
-                        "#t": ["bigtalk_global_historyjetzt_v2"]
-                    }];
-                    socket.send(JSON.stringify(subscriptionRequest));
-                };
-
-                socket.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    if (data[0] === "EVENT" && data[2]) {
-                        const nostrEvent = data[2];
-                        try {
-                            const parsedBody = JSON.parse(nostrEvent.content);
-                            if (parsedBody.to && parsedBody.body) {
-                                if (!activeMessages.some(m => m.id === nostrEvent.id)) {
-                                    activeMessages.push({
-                                        id: nostrEvent.id,
-                                        to: parsedBody.to,
-                                        from: parsedBody.from || 'Anonymous',
-                                        body: parsedBody.body,
-                                        timestamp: nostrEvent.created_at * 1000
-                                    });
-                                    activeMessages.sort((a, b) => b.timestamp - a.timestamp);
-                                    renderFeed();
+                    socket.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        if (data[0] === "EVENT" && data[2]) {
+                            const nostrEvent = data[2];
+                            try {
+                                const parsedBody = JSON.parse(nostrEvent.content);
+                                if (parsedBody.to && parsedBody.body) {
+                                    if (!activeMessages.some(m => m.id === nostrEvent.id)) {
+                                        activeMessages.push({
+                                            id: nostrEvent.id,
+                                            to: parsedBody.to,
+                                            from: parsedBody.from || 'Anonymous',
+                                            body: parsedBody.body,
+                                            timestamp: nostrEvent.created_at * 1000
+                                        });
+                                        activeMessages.sort((a, b) => b.timestamp - a.timestamp);
+                                        renderFeed();
+                                    }
                                 }
-                            }
-                        } catch(e) {}
-                    }
-                };
+                            } catch(e) {}
+                        }
+                    };
 
-                socket.onclose = () => {
-                    updateStatusBanner(false);
-                    setTimeout(connectToGlobalNetwork, 3000); // Re-establish if dropped
-                };
+                    socket.onclose = () => {
+                        activeSockets = activeSockets.filter(s => s !== socket);
+                        connectedCount = Math.max(0, connectedCount - 1);
+                        updateStatusBanner();
+                    };
 
-                socket.onerror = () => {
-                    updateStatusBanner(false);
-                };
-
-            } catch(e) {
-                updateStatusBanner(false);
-            }
+                } catch(e) {
+                    console.error("Connection failed: " + url);
+                }
+            });
         }
 
-        function updateStatusBanner(isConnected) {
+        function updateStatusBanner() {
             const statusBanner = document.getElementById('connection-status');
             const submitBtn = document.getElementById('submit-btn');
 
-            if (isConnected) {
+            if (connectedCount > 0) {
                 statusBanner.className = "status-banner status-connected";
-                statusBanner.innerText = "Connected to Live Global Network";
+                statusBanner.innerText = `Connected to Global Cloud Network (${connectedCount} Relays Active)`;
                 submitBtn.disabled = false;
                 submitBtn.innerText = "Publish Global Message";
             } else {
                 statusBanner.className = "status-banner status-connecting";
-                statusBanner.innerText = "Connecting to Global Database Node...";
+                statusBanner.innerText = "Connecting to Global Networks...";
                 submitBtn.disabled = true;
                 submitBtn.innerText = "Awaiting secure link up...";
             }
@@ -424,33 +407,28 @@
             const rawEvent = {
                 kind: 1,
                 created_at: timestamp,
-                tags: [["t", "bigtalk_global_historyjetzt_v2"]],
+                tags: [["t", "bigtalk_global_historyjetzt_v4"]],
                 content: JSON.stringify(messagePayload),
                 pubkey: "b00000000000000000000000000000000000000000000000000000000000000c",
                 id: Math.random().toString(16).substring(2, 66)
             };
 
-            if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify(["EVENT", rawEvent]));
-                
-                // Optimistically render instantly on screen for responsive UI feedback
-                if (!activeMessages.some(m => m.id === rawEvent.id)) {
-                    activeMessages.unshift({
-                        id: rawEvent.id,
-                        to: messagePayload.to,
-                        from: messagePayload.from,
-                        body: messagePayload.body,
-                        timestamp: Date.now()
-                    });
-                    renderFeed();
+            // Broadcast message payload to ALL connected database relays simultaneously
+            let sendSuccess = false;
+            activeSockets.forEach(socket => {
+                if (socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify(["EVENT", rawEvent]));
+                    sendSuccess = true;
                 }
+            });
 
+            if (sendSuccess) {
                 recipientField.value = '';
                 senderField.value = 'Anonymous';
                 messageField.value = '';
             } else {
-                alert("Connection lost. Trying to sync back up...");
-                connectToGlobalNetwork();
+                alert("Connection dropped. Retrying sync...");
+                connectToMultiNetwork();
             }
         }
 
