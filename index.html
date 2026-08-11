@@ -2,80 +2,73 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpenWall — Global Live Board</title>
     <style>
-        /* Simplified styles for brevity */
-        :root { --primary: #6366f1; --secondary: #0f172a; --bg-body: #f8fafc; }
-        body { font-family: sans-serif; background-color: var(--bg-body); margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
-        header { text-align: center; padding: 40px 0; }
-        .form-card, .message-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
-        input, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #e2e8f0; border-radius: 8px; }
-        button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; }
-        .msg-meta { font-size: 0.85rem; color: #64748b; margin-bottom: 10px; }
-        .msg-body { white-space: pre-wrap; }
+        /* Minimal style to make it functional */
+        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
+        .form-group { margin-bottom: 15px; }
+        input, textarea { width: 100%; padding: 8px; margin-top: 5px; }
+        button { padding: 10px 15px; cursor: pointer; }
+        .message-card { border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; border-radius: 5px; }
+        .msg-meta { font-size: 0.8rem; color: #666; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header><h1>OpenWall</h1></header>
-        <div class="form-card">
-            <form id="message-form" onsubmit="postMessage(event)">
-                <input type="text" id="recipient-input" placeholder="To" required>
-                <input type="text" id="sender-input" placeholder="From" value="Anonymous">
-                <textarea id="message-input" placeholder="Message" required></textarea>
-                <button type="submit">Publish</button>
-            </form>
-        </div>
-        <div id="feed-container"></div>
-    </div>
+    <h1>OpenWall</h1>
+    <div id="connection-status">Connecting...</div>
+    <form id="message-form" onsubmit="postMessage(event)">
+        <input type="text" id="recipient-input" placeholder="To" required>
+        <input type="text" id="sender-input" placeholder="From" value="Anonymous">
+        <textarea id="message-input" placeholder="Message" required></textarea>
+        <button type="submit">Post Message</button>
+    </form>
+    <div id="feed-container"></div>
     <script>
-        // Combined HTML/JS structure as requested
-        const RELAY = "wss://relay.nostr.band";
-        const socket = new WebSocket(RELAY);
-        const APP_TAG = "bigtalk_global_historyjetzt_v4";
+        // High-stability free global JSON storage API
+        const API_URL = "https://jsonbin.io";
+        const API_KEY = "$2a$10$72T7mJjTzI78OonY7/02iO3gVbI09V7N.L2jR4M.2V7bN/mImsS2q";
         let activeMessages = [];
-
-        socket.onopen = () => {
-            const sub = ["REQ", "sub1", {kinds: [1], "#t": [APP_TAG], limit: 20}];
-            socket.send(JSON.stringify(sub));
-        };
-
-        socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data[0] === "EVENT" && data[2]) {
-                try {
-                    const content = JSON.parse(data[2].content);
-                    activeMessages.unshift(content);
+        
+        async function fetchCloudMessages() {
+            try {
+                const response = await fetch(API_URL, { headers: { 'X-Master-Key': API_KEY, 'X-Bin-Meta': 'false' } });
+                if (response.ok) {
+                    activeMessages = await response.json();
                     renderFeed();
-                } catch(e) {}
-            }
-        };
+                }
+            } catch (error) { console.error("Error:", error); }
+        }
 
-        function postMessage(e) {
-            e.preventDefault();
-            const msg = {
+        async function postMessage(event) {
+            event.preventDefault();
+            const newMessage = {
                 to: document.getElementById('recipient-input').value,
                 from: document.getElementById('sender-input').value,
-                body: document.getElementById('message-input').value
+                body: document.getElementById('message-input').value,
+                timestamp: Date.now()
             };
-            const event = {
-                kind: 1, created_at: Math.floor(Date.now()/1000),
-                tags: [["t", APP_TAG]], content: JSON.stringify(msg)
-            };
-            socket.send(JSON.stringify(["EVENT", event]));
-            e.target.reset();
+            activeMessages.unshift(newMessage);
+            renderFeed();
+            
+            await fetch(API_URL, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+                body: JSON.stringify(activeMessages.slice(0, 50))
+            });
+            document.getElementById('message-input').value = '';
         }
 
         function renderFeed() {
-            document.getElementById('feed-container').innerHTML = activeMessages.map(m => `
+            document.getElementById('feed-container').innerHTML = activeMessages.map(msg => `
                 <div class="message-card">
-                    <div class="msg-meta">To: ${m.to} | From: ${m.from}</div>
-                    <div class="msg-body">${m.body}</div>
+                    <div class="msg-meta">To: ${msg.to} | From: ${msg.from}</div>
+                    <div>${msg.body}</div>
                 </div>
             `).join('');
         }
+        
+        setInterval(fetchCloudMessages, 5000);
+        fetchCloudMessages();
     </script>
 </body>
 </html>
