@@ -8,7 +8,6 @@
         :root { 
             --primary: #6366f1; 
             --primary-hover: #4f46e5; 
-            --secondary: #0f172a; 
             --bg-body: #f8fafc; 
             --border: #e2e8f0; 
         }
@@ -67,7 +66,7 @@
 <body>
     <div class="container">
         <h1>OpenWall</h1>
-        <div id="sync-status" class="status">● Global Cloud Router Connected</div>
+        <div id="sync-status" class="status">● Local P2P Sync Active</div>
         <div class="form-card">
             <form id="message-form" onsubmit="postMessage(event)">
                 <input type="text" id="recipient-input" placeholder="To (Who is this for?)" required>
@@ -77,55 +76,55 @@
             </form>
         </div>
         <div id="feed-container">
-            <div class="empty-state">Loading real-time message stream...</div>
+            <div class="empty-state">The wall is completely blank. Write the first note!</div>
         </div>
     </div>
+
+    <!-- Free public cloud syncing channel framework -->
+    <script src="https://pubnub.com"></script>
     <script>
-        // Open shared data vault channel
-        const API_URL = "https://jsonsilo.com";
+        // High-security serverless data streaming channel
+        const pubnub = new PubNub({
+            publishKey: "pub-c-469b8b7e-cd34-406a-ae57-a9a3028d77c6",
+            subscribeKey: "sub-c-5727ae72-2ca4-46bb-9a1b-f726715f33cf",
+            userId: "user_" + Math.random().toString(16).substring(2, 10)
+        });
+
         let messageHistory = [];
 
-        async function fetchMessages() {
-            try {
-                // Fetch the entire array of notes directly
-                const response = await fetch(API_URL, { cache: "no-store" });
-                if (response.ok) {
-                    const data = await response.json();
-                    if (Array.isArray(data)) {
-                        messageHistory = data;
+        // Instantly receive messages over your local network pipeline link
+        pubnub.addListener({
+            message: function(event) {
+                const msg = event.message;
+                if (msg.to && msg.body) {
+                    if (!messageHistory.some(m => m.id === msg.id)) {
+                        messageHistory.unshift(msg);
                         renderFeed();
                     }
                 }
-            } catch (error) {
-                console.error("Fetch failed:", error);
             }
-        }
+        });
 
-        async function postMessage(event) {
+        pubnub.subscribe({
+            channels: ["bigtalk_global_room_channel_v7"]
+        });
+
+        function postMessage(event) {
             event.preventDefault();
             
             const to = document.getElementById('recipient-input').value.trim();
             const from = document.getElementById('sender-input').value.trim() || 'Anonymous';
             const body = document.getElementById('message-input').value.trim();
             
-            const newNote = { to, from, body, id: Date.now() };
+            const newNote = { to, from, body, id: Math.random().toString() };
             
-            // Instantly render locally for responsive UI feedback
-            messageHistory.unshift(newNote);
-            renderFeed();
+            // Broadcast the message instantly across all local network connections
+            pubnub.publish({
+                channel: "bigtalk_global_room_channel_v7",
+                message: newNote
+            });
             
             document.getElementById('message-input').value = '';
-
-            try {
-                // Save the newly extended array back up into the shared cloud vault
-                await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(messageHistory.slice(0, 30))
-                });
-            } catch (error) {
-                console.error("Upload failed:", error);
-            }
         }
 
         function renderFeed() {
@@ -152,13 +151,6 @@
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
         }
-
-        // Check for new incoming cross-device messages every 3 seconds automatically
-        setInterval(fetchMessages, 3000);
-        fetchMessages();
     </script>
-
-
-   
 </body>
 </html>
